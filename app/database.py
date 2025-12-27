@@ -28,13 +28,13 @@ class DBManager:
     
     def setup_folders(self):
         base_folders = {
-            'backups': Path("backups"),
-            'exports': Path("exports"),
-            'archives': Path("archives")
+            'backups': Path("/app/backups"),
+            'exports': Path("/app/exports"),
+            'archives': Path("/app/archives")
         }
         
         for folder in base_folders.values():
-            folder.mkdir(exist_ok=True)
+            folder.mkdir(exist_ok=True, parents=True)
         
         return base_folders
     
@@ -255,7 +255,6 @@ class DBManager:
                         delete_sql = f'DELETE FROM "{rel_name}" WHERE "{rel_column}" IN ({subquery})'
                     
                     cursor.execute(delete_sql)
-                    print(f"Cascade delete from {rel_name}: {cursor.rowcount} rows")
             
             delete_sql = f'DELETE FROM "{table_name}" WHERE {condition}'
             cursor.execute(delete_sql)
@@ -406,7 +405,6 @@ class DBManager:
                 try:
                     cursor.execute(f'DROP TABLE IF EXISTS "{name}" CASCADE')
                     removed += 1
-                    print(f"Dropped table: {name}")
                     
                 except Exception as e:
                     print(f"Error dropping table {name}: {e}")
@@ -655,11 +653,9 @@ class DBManager:
                 
                 for table in tables:
                     cursor.execute(f'DROP TABLE IF EXISTS "{table[0]}" CASCADE')
-                    print(f"Dropped table: {table[0]}")
                 
                 conn.commit()
                 conn.close()
-                print(f"Dropped {len(tables)} tables before restore")
             except Exception as e:
                 print(f"Error dropping tables: {e}")
             

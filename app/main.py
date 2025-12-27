@@ -464,8 +464,6 @@ async def pack_tables(
     pack_all: bool = Form(False)
 ):
     try:
-        print(f"Pack request: tables={tables}, pack_all={pack_all}")
-        
         if pack_all:
             ok, result = db.pack_all_tables()
         else:

@@ -11,10 +11,13 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-top">
-        <h3><i class="fas fa-toolbox"></i> Основные функции</h3>
+    <div class="card-top" onclick="toggleSection('mainFunctions')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-toolbox"></i> Основные функции</h3>
+            <i class="fas fa-chevron-down" id="mainFunctionsIcon"></i>
+        </div>
     </div>
-    <div class="card-body">
+    <div class="card-body" id="mainFunctions">
         <div class="grid grid-cols-2">
             <div>
                 <button class="btn w-full mb-3" onclick="togglePanel('backupPanel')">
@@ -40,11 +43,15 @@
 </div>
 
 <div class="card mb-4" id="backupPanel" style="display: none;">
-    <div class="card-top flex justify-between align-center">
-        <h3><i class="fas fa-shield"></i> Создание резервной копии</h3>
-        <button class="btn btn-small" onclick="togglePanel('backupPanel')">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="card-top">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-shield"></i> Создание резервной копии</h3>
+            <div>
+                <button class="btn btn-small" onclick="togglePanel('backupPanel')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         <div class="info-box mb-4">
@@ -93,11 +100,15 @@
 </div>
 
 <div class="card mb-4" id="restorePanel" style="display: none;">
-    <div class="card-top flex justify-between align-center">
-        <h3><i class="fas fa-history"></i> Восстановление из копии</h3>
-        <button class="btn btn-small" onclick="togglePanel('restorePanel')">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="card-top">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-history"></i> Восстановление из копии</h3>
+            <div>
+                <button class="btn btn-small" onclick="togglePanel('restorePanel')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         <div class="warning-box mb-4">
@@ -128,11 +139,15 @@
 </div>
 
 <div class="card mb-4" id="exportPanel" style="display: none;">
-    <div class="card-top flex justify-between align-center">
-        <h3><i class="fas fa-download"></i> Экспорт данных</h3>
-        <button class="btn btn-small" onclick="togglePanel('exportPanel')">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="card-top">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-download"></i> Экспорт данных</h3>
+            <div>
+                <button class="btn btn-small" onclick="togglePanel('exportPanel')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         <div class="grid grid-cols-2 gap-4">
@@ -191,11 +206,15 @@
 </div>
 
 <div class="card mb-4" id="packPanel" style="display: none;">
-    <div class="card-top flex justify-between align-center">
-        <h3><i class="fas fa-box"></i> Архивирование таблиц</h3>
-        <button class="btn btn-small" onclick="togglePanel('packPanel')">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="card-top">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-box"></i> Архивирование таблиц</h3>
+            <div>
+                <button class="btn btn-small" onclick="togglePanel('packPanel')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         <div class="warning-box mb-4">
@@ -252,11 +271,15 @@
 </div>
 
 <div class="card mb-4" id="dangerPanel" style="display: none;">
-    <div class="card-top flex justify-between align-center">
-        <h3><i class="fas fa-skull"></i> Опасные операции</h3>
-        <button class="btn btn-small" onclick="togglePanel('dangerPanel')">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="card-top">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-skull"></i> Опасные операции</h3>
+            <div>
+                <button class="btn btn-small" onclick="togglePanel('dangerPanel')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
     </div>
     <div class="card-body">
         <div class="danger-alert mb-4">
@@ -354,127 +377,25 @@
     </div>
 </div>
 
-<style>
-.folder-info {
-    padding: 12px;
-    background: #0f0f1a;
-    border-radius: 6px;
-    border: 1px solid #2a2a3e;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    opacity: 0.7;
-}
-
-.danger-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-}
-
-.danger-card {
-    padding: 20px;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: rgba(239, 68, 68, 0.05);
-}
-
-.danger-card:hover {
-    transform: translateY(-2px);
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.danger-symbol {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 15px;
-    font-size: 20px;
-    color: #ef4444;
-}
-
-.danger-tag {
-    display: inline-block;
-    padding: 4px 12px;
-    background: #ef4444;
-    color: white;
-    border-radius: 20px;
-    font-size: 12px;
-    margin-top: 10px;
-}
-
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    backdrop-filter: blur(4px);
-}
-
-.modal-box {
-    background: #12121a;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    border: 1px solid #2a2a3e;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-}
-
-.modal-top {
-    padding: 20px;
-    border-bottom: 1px solid #2a2a3e;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.modal-bottom {
-    padding: 20px;
-    border-top: 1px solid #2a2a3e;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.file-upload {
-    border: 2px dashed #2a2a3e;
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    background: #0f0f1a;
-}
-
-.file-upload:hover {
-    border-color: #3a3a4e;
-}
-
-.file-info {
-    font-size: 14px;
-    opacity: 0.7;
-    margin-top: 10px;
-}
-</style>
-
 <script>
-let currentSaveFormat = 'xlsx';
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+    
+    if (section.style.display === 'none' || section.style.display === '') {
+        section.style.display = 'block';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    } else {
+        section.style.display = 'none';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+}
 
 function togglePanel(panelId) {
     const panel = document.getElementById(panelId);
@@ -485,6 +406,8 @@ function togglePanel(panelId) {
         panel.style.display = 'none';
     }
 }
+
+let currentSaveFormat = 'xlsx';
 
 function pickFormat(format) {
     currentSaveFormat = format;
@@ -777,5 +700,129 @@ async function wipeDatabase() {
         alert('Ошибка сети: ' + error.message);
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const section = document.getElementById('mainFunctions');
+    if (section) section.style.display = 'none';
+});
 </script>
+
+<style>
+.folder-info {
+    padding: 12px;
+    background: #0f0f1a;
+    border-radius: 6px;
+    border: 1px solid #2a2a3e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.7;
+}
+
+.danger-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.danger-card {
+    padding: 20px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.danger-card:hover {
+    transform: translateY(-2px);
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.danger-symbol {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 20px;
+    color: #ef4444;
+}
+
+.danger-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #ef4444;
+    color: white;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-box {
+    background: #12121a;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    border: 1px solid #2a2a3e;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+.modal-top {
+    padding: 20px;
+    border-bottom: 1px solid #2a2a3e;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-bottom {
+    padding: 20px;
+    border-top: 1px solid #2a2a3e;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.file-upload {
+    border: 2px dashed #2a2a3e;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    background: #0f0f1a;
+}
+
+.file-upload:hover {
+    border-color: #3a3a4e;
+}
+
+.file-info {
+    font-size: 14px;
+    opacity: 0.7;
+    margin-top: 10px;
+}
+</style>
 {% endblock %}

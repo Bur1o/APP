@@ -1,7 +1,7 @@
 :root {
     --bg-main: #0a0a0f;
     --bg-secondary: #12121a;
-    --bg-nav: #0d0d14;
+    --bg-panel: #0d0d14;
     --bg-hover: #1a1a24;
     --bg-active: #22222e;
     --text-main: #ffffff;
@@ -40,22 +40,23 @@ body {
     min-height: 100vh;
 }
 
-.nav {
+.right-panel {
     width: 220px;
-    background: var(--bg-nav);
+    background: var(--bg-panel);
     position: fixed;
+    right: 0;
     height: 100vh;
     overflow-y: auto;
     z-index: 1000;
-    border-right: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
 }
 
-.nav-top {
+.panel-header {
     padding: 24px 20px;
     border-bottom: 1px solid var(--border-color);
 }
 
-.nav-top h1 {
+.panel-header h1 {
     font-size: 18px;
     font-weight: 600;
     display: flex;
@@ -63,11 +64,11 @@ body {
     gap: 10px;
 }
 
-.nav-items {
+.panel-menu {
     padding: 16px 0;
 }
 
-.nav-link {
+.panel-link {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -75,32 +76,32 @@ body {
     color: var(--text-secondary);
     text-decoration: none;
     transition: var(--transition);
-    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
     font-size: 14px;
 }
 
-.nav-link:hover {
+.panel-link:hover {
     background: var(--bg-hover);
     color: var(--text-main);
 }
 
-.nav-link.active {
+.panel-link.active {
     background: var(--bg-active);
     color: var(--text-main);
-    border-left-color: var(--blue);
+    border-right-color: var(--blue);
 }
 
-.nav-icon {
+.panel-icon {
     font-size: 16px;
     width: 20px;
     opacity: 0.7;
 }
 
-.nav-link.active .nav-icon {
+.panel-link.active .panel-icon {
     opacity: 1;
 }
 
-.nav-bottom {
+.panel-footer {
     padding: 20px;
     margin-top: auto;
     border-top: 1px solid var(--border-color);
@@ -110,7 +111,7 @@ body {
 
 .main {
     flex: 1;
-    margin-left: 220px;
+    margin-right: 220px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -128,11 +129,6 @@ body {
 .top-title h2 {
     font-size: 20px;
     font-weight: 600;
-}
-
-.top-info span {
-    font-size: 12px;
-    opacity: 0.7;
 }
 
 .content {
@@ -604,12 +600,12 @@ body {
 }
 
 @media (max-width: 1024px) {
-    .nav {
+    .right-panel {
         width: 200px;
     }
     
     .main {
-        margin-left: 200px;
+        margin-right: 200px;
     }
     
     .grid-cols-3 {
@@ -618,16 +614,16 @@ body {
 }
 
 @media (max-width: 768px) {
-    .nav {
-        transform: translateX(-100%);
+    .right-panel {
+        transform: translateX(100%);
     }
     
-    .nav.active {
+    .right-panel.active {
         transform: translateX(0);
     }
     
     .main {
-        margin-left: 0;
+        margin-right: 0;
     }
     
     .top {

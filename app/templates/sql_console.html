@@ -10,139 +10,159 @@
     <p class="main-description">Выполняйте запросы и сохраняйте результаты</p>
 </div>
 
-<div class="grid grid-cols-2 gap-4">
-    <div class="card">
-        <div class="card-top">
+<div class="card mb-4">
+    <div class="card-top" onclick="toggleSection('editorSection')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
             <h3><i class="fas fa-terminal"></i> Редактор SQL</h3>
-        </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label class="form-label">SQL запрос</label>
-                <textarea id="sqlEditor" class="form-input" rows="8" 
-                          placeholder="SELECT * FROM table_name WHERE condition = %s"
-                          style="font-family: monospace; font-size: 13px;">
-{% if request.query_params.get('table') %}SELECT * FROM {{ request.query_params.get('table') }} LIMIT 200{% endif %}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Параметры</label>
-                <div class="flex gap-3 mb-2">
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <input type="radio" name="paramType" value="array" checked onchange="changeParamType()">
-                        <span>Массив</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <input type="radio" name="paramType" value="object" onchange="changeParamType()">
-                        <span>Объект</span>
-                    </label>
-                </div>
-                <textarea id="sqlParams" class="form-input" rows="4" 
-                          placeholder='["value1", "value2"]'
-                          style="font-family: monospace; font-size: 13px;"></textarea>
-                <small class="form-note" id="paramNote">
-                    Для позиционных параметров используйте массив: ["value1", "value2"]
-                </small>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Формат сохранения</label>
-                <select id="saveFormat" class="form-input">
-                    <option value="csv">Excel (.xlsx)</option>
-                    <option value="json">JSON (.json)</option>
-                </select>
-            </div>
-            
-            <div class="flex gap-3 mt-4">
-                <button onclick="runSQL()" class="btn btn-blue" style="flex: 1;">
-                    <i class="fas fa-play"></i> Выполнить
-                </button>
-                <button onclick="saveResults()" class="btn btn-green" style="flex: 1;">
-                    <i class="fas fa-download"></i> Сохранить
-                </button>
-                <button onclick="clearEditor()" class="btn">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
+            <i class="fas fa-chevron-down" id="editorIcon"></i>
         </div>
     </div>
-    
-    <div>
-        <div class="card mb-4">
-            <div class="card-top">
-                <h3><i class="fas fa-database"></i> База</h3>
-            </div>
-            <div class="card-body">
-                <div class="form-group">
-                    <input type="text" id="searchTable" class="form-input" 
-                           placeholder="Поиск таблицы..." onkeyup="filterTables()">
-                </div>
-                <div style="max-height: 300px; overflow-y: auto; padding: 8px; background: #0f0f1a; border-radius: 6px;">
-                    <div class="grid grid-cols-2" id="tablesList">
-                        {% for table in tables %}
-                        <div class="btn text-left" 
-                             onclick="insertTable('{{ table }}')"
-                             style="justify-content: start; padding: 10px;">
-                            <i class="fas fa-table"></i> {{ table }}
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    <div class="card-body" id="editorSection">
+        <div class="form-group">
+            <label class="form-label">SQL запрос</label>
+            <textarea id="sqlEditor" class="form-input" rows="8" 
+                      placeholder="SELECT * FROM table_name WHERE condition = %s"
+                      style="font-family: monospace; font-size: 13px;">
+{% if request.query_params.get('table') %}SELECT * FROM {{ request.query_params.get('table') }} LIMIT 200{% endif %}</textarea>
         </div>
         
-        <div class="card">
-            <div class="card-top">
-                <h3><i class="fas fa-bolt"></i> Примеры</h3>
+        <div class="form-group">
+            <label class="form-label">Параметры</label>
+            <div class="flex gap-3 mb-2">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="paramType" value="array" checked onchange="changeParamType()">
+                    <span>Массив</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="paramType" value="object" onchange="changeParamType()">
+                    <span>Объект</span>
+                </label>
             </div>
-            <div class="card-body">
-                <div class="flex flex-col gap-2">
-                    <button class="btn btn-small text-left" onclick="loadExample('select_all')">
-                        <i class="fas fa-search"></i> SELECT * FROM таблица
-                    </button>
-                    <button class="btn btn-small text-left" onclick="loadExample('select_where')">
-                        <i class="fas fa-filter"></i> SELECT с WHERE
-                    </button>
-                    <button class="btn btn-small text-left" onclick="loadExample('join')">
-                        <i class="fas fa-link"></i> JOIN таблиц
-                    </button>
-                    <button class="btn btn-small text-left" onclick="loadExample('aggregate')">
-                        <i class="fas fa-calculator"></i> Агрегатные функции
-                    </button>
+            <textarea id="sqlParams" class="form-input" rows="4" 
+                      placeholder='["value1", "value2"]'
+                      style="font-family: monospace; font-size: 13px;"></textarea>
+            <small class="form-note" id="paramNote">
+                Для позиционных параметров используйте массив: ["value1", "value2"]
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Формат сохранения</label>
+            <select id="saveFormat" class="form-input">
+                <option value="csv">Excel (.xlsx)</option>
+                <option value="json">JSON (.json)</option>
+            </select>
+        </div>
+        
+        <div class="flex gap-3 mt-4">
+            <button onclick="runSQL()" class="btn btn-blue" style="flex: 1;">
+                <i class="fas fa-play"></i> Выполнить
+            </button>
+            <button onclick="saveResults()" class="btn btn-green" style="flex: 1;">
+                <i class="fas fa-download"></i> Сохранить
+            </button>
+            <button onclick="clearEditor()" class="btn">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-top" onclick="toggleSection('tablesSection')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-database"></i> База данных</h3>
+            <i class="fas fa-chevron-down" id="tablesIcon"></i>
+        </div>
+    </div>
+    <div class="card-body" id="tablesSection">
+        <div class="form-group">
+            <input type="text" id="searchTable" class="form-input" 
+                   placeholder="Поиск таблицы..." onkeyup="filterTables()">
+        </div>
+        <div style="max-height: 300px; overflow-y: auto; padding: 8px; background: #0f0f1a; border-radius: 6px;">
+            <div class="grid grid-cols-2" id="tablesList">
+                {% for table in tables %}
+                <div class="btn text-left" 
+                     onclick="insertTable('{{ table }}')"
+                     style="justify-content: start; padding: 10px;">
+                    <i class="fas fa-table"></i> {{ table }}
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-<div class="card mt-4" id="resultPanel" style="display: none;">
-    <div class="card-top flex justify-between align-center">
-        <h3><i class="fas fa-table-list"></i> Результаты</h3>
-        <div>
-            <span style="opacity: 0.7; margin-right: 12px;">Найдено: <span id="rowCount">0</span></span>
-            <span style="opacity: 0.7;">Время: <span id="timeTaken">0</span> мс</span>
-            <button onclick="copyTable()" class="btn btn-small ml-3">
-                <i class="fas fa-copy"></i> Копировать
+<div class="card mb-4">
+    <div class="card-top" onclick="toggleSection('examplesSection')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
+            <h3><i class="fas fa-bolt"></i> Примеры запросов</h3>
+            <i class="fas fa-chevron-down" id="examplesIcon"></i>
+        </div>
+    </div>
+    <div class="card-body" id="examplesSection">
+        <div class="flex flex-col gap-2">
+            <button class="btn btn-small text-left" onclick="loadExample('select_all')">
+                <i class="fas fa-search"></i> SELECT * FROM таблица
+            </button>
+            <button class="btn btn-small text-left" onclick="loadExample('select_where')">
+                <i class="fas fa-filter"></i> SELECT с WHERE
+            </button>
+            <button class="btn btn-small text-left" onclick="loadExample('join')">
+                <i class="fas fa-link"></i> JOIN таблиц
+            </button>
+            <button class="btn btn-small text-left" onclick="loadExample('aggregate')">
+                <i class="fas fa-calculator"></i> Агрегатные функции
             </button>
         </div>
     </div>
-    <div class="card-body">
+</div>
+
+<div class="card mb-4" id="resultPanel" style="display: none;">
+    <div class="card-top" onclick="toggleSection('resultsSection')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
+            <div class="flex align-center gap-4">
+                <h3><i class="fas fa-table-list"></i> Результаты запроса</h3>
+                <span style="opacity: 0.7;">Найдено: <span id="rowCount">0</span></span>
+                <span style="opacity: 0.7;">Время: <span id="timeTaken">0</span> мс</span>
+            </div>
+            <i class="fas fa-chevron-down" id="resultsIcon"></i>
+        </div>
+    </div>
+    <div class="card-body" id="resultsSection">
         <div class="table-wrapper">
             <table id="resultTable" class="compact-table">
             </table>
         </div>
-    </div>
-</div>
-
-<div class="card mt-4" id="infoPanel" style="display: none;">
-    <div class="card-top">
-        <h3><i class="fas fa-info"></i> Информация</h3>
-    </div>
-    <div class="card-body">
-        <div id="queryStats" class="flex gap-4 mb-3"></div>
+        <div class="flex justify-end mt-3">
+            <button onclick="copyTable()" class="btn btn-small">
+                <i class="fas fa-copy"></i> Копировать таблицу
+            </button>
+        </div>
     </div>
 </div>
 
 <script>
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+    
+    if (section.style.display === 'none' || section.style.display === '') {
+        section.style.display = 'block';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    } else {
+        section.style.display = 'none';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+}
+
 let lastQueryDuration = 0;
 
 function insertTable(tableName) {
@@ -221,7 +241,6 @@ function clearEditor() {
     document.getElementById('sqlEditor').value = '';
     document.getElementById('sqlParams').value = '[]';
     document.getElementById('resultPanel').style.display = 'none';
-    document.getElementById('infoPanel').style.display = 'none';
     document.getElementById('searchTable').value = '';
     filterTables();
 }
@@ -280,7 +299,7 @@ async function runSQL() {
             document.getElementById('rowCount').textContent = result.count;
             document.getElementById('timeTaken').textContent = lastQueryDuration;
             document.getElementById('resultPanel').style.display = 'block';
-            showStats(result);
+            toggleSection('resultsSection');
         } else {
             alert('Ошибка: ' + result.error);
         }
@@ -364,22 +383,6 @@ async function saveResults() {
     }
 }
 
-function showStats(result) {
-    const statsDiv = document.getElementById('queryStats');
-    let statsHTML = '';
-    
-    statsHTML += `<div><strong>Записей:</strong> ${result.count}</div>`;
-    statsHTML += `<div><strong>Время:</strong> ${lastQueryDuration} мс</div>`;
-    
-    if (result.data && result.data.length > 0) {
-        const firstRow = result.data[0];
-        statsHTML += `<div><strong>Колонок:</strong> ${Object.keys(firstRow).length}</div>`;
-    }
-    
-    statsDiv.innerHTML = statsHTML;
-    document.getElementById('infoPanel').style.display = 'block';
-}
-
 function showResults(data) {
     if (!data || data.length === 0) {
         document.getElementById('resultTable').innerHTML = 
@@ -443,5 +446,13 @@ function copyTable() {
         alert('Таблица скопирована');
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = ['editorSection', 'tablesSection', 'examplesSection'];
+    sections.forEach(section => {
+        const el = document.getElementById(section);
+        if (el) el.style.display = 'none';
+    });
+});
 </script>
 {% endblock %}

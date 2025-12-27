@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p static templates backups exports archives
+RUN mkdir -p /app/backups /app/exports /app/archives static templates
 
 EXPOSE 3000
 

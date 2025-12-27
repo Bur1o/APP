@@ -22,143 +22,152 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-4">
-    <div class="card">
-        <div class="card-top">
+<div class="card mb-4">
+    <div class="card-top" onclick="toggleSection('tablesListSection')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
             <h3><i class="fas fa-list"></i> Список таблиц</h3>
+            <i class="fas fa-chevron-down" id="tablesListIcon"></i>
         </div>
-        <div class="card-body">
-            <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: #0f0f1a; border-radius: 6px;">
-                <div class="flex flex-wrap gap-2">
-                    {% for table in tables %}
-                    <a href="/tables?table={{ table }}" 
-                       class="btn {% if current_table == table %}btn-blue{% else %}{% endif %}" 
-                       style="margin: 2px;">
-                        {{ table }}
-                        {% if table_counts %}
-                        <span class="count-badge" style="margin-left: 5px;">
-                            {{ table_counts.get(table, 0) }}
-                        </span>
-                        {% endif %}
-                    </a>
-                    {% else %}
-                    <div class="text-center w-full py-3">
-                        <i class="fas fa-database" style="font-size: 32px; opacity: 0.3; margin-bottom: 10px;"></i>
-                        <p style="opacity: 0.6;">Нет таблиц</p>
-                    </div>
-                    {% endfor %}
+    </div>
+    <div class="card-body" id="tablesListSection">
+        <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: #0f0f1a; border-radius: 6px;">
+            <div class="flex flex-wrap gap-2">
+                {% for table in tables %}
+                <a href="/tables?table={{ table }}" 
+                   class="btn {% if current_table == table %}btn-blue{% else %}{% endif %}" 
+                   style="margin: 2px;">
+                    {{ table }}
+                    {% if table_counts %}
+                    <span class="count-badge" style="margin-left: 5px;">
+                        {{ table_counts.get(table, 0) }}
+                    </span>
+                    {% endif %}
+                </a>
+                {% else %}
+                <div class="text-center w-full py-3">
+                    <i class="fas fa-database" style="font-size: 32px; opacity: 0.3; margin-bottom: 10px;"></i>
+                    <p style="opacity: 0.6;">Нет таблиц</p>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
-    
-    {% if current_table %}
-    <div class="card">
-        <div class="card-top flex justify-between align-center">
-            <h3><i class="fas fa-table"></i> {{ current_table }}</h3>
-            <span style="font-size: 14px; opacity: 0.7;">{{ total }} записей</span>
-        </div>
-        <div class="card-body">
-            {% if pages > 1 %}
-            <div class="pagination">
-                {% if page > 1 %}
-                <a href="/tables?table={{ current_table }}&page=1" class="page-btn">
-                    <i class="fas fa-angle-double-left"></i>
-                </a>
-                <a href="/tables?table={{ current_table }}&page={{ page - 1 }}" class="page-btn">
-                    <i class="fas fa-angle-left"></i>
-                </a>
-                {% endif %}
-                
-                <span class="page-text">Страница {{ page }} из {{ pages }}</span>
-                
-                {% if page < pages %}
-                <a href="/tables?table={{ current_table }}&page={{ page + 1 }}" class="page-btn">
-                    <i class="fas fa-angle-right"></i>
-                </a>
-                <a href="/tables?table={{ current_table }}&page={{ pages }}" class="page-btn">
-                    <i class="fas fa-angle-double-right"></i>
-                </a>
-                {% endif %}
+</div>
+
+{% if current_table %}
+<div class="card mb-4">
+    <div class="card-top" onclick="toggleSection('dataSection')" style="cursor: pointer;">
+        <div class="flex justify-between align-center">
+            <div class="flex align-center gap-3">
+                <h3><i class="fas fa-table"></i> {{ current_table }}</h3>
+                <span style="font-size: 14px; opacity: 0.7;">{{ total }} записей</span>
             </div>
+            <i class="fas fa-chevron-down" id="dataIcon"></i>
+        </div>
+    </div>
+    <div class="card-body" id="dataSection">
+        {% if pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="/tables?table={{ current_table }}&page=1" class="page-btn">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="/tables?table={{ current_table }}&page={{ page - 1 }}" class="page-btn">
+                <i class="fas fa-angle-left"></i>
+            </a>
             {% endif %}
             
-            <div class="table-wrapper mt-3">
-                {% if data and data|length > 0 %}
-                <table class="compact-table">
-                    <thead>
-                        <tr>
-                            {% for col in columns %}
-                            <th>{{ col.column_name }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in data %}
-                        <tr>
-                            {% for col in columns %}
-                            <td>
-                                {% set value = row[col.column_name] %}
-                                {% if value is none %}
-                                    <span style="opacity: 0.4;">—</span>
-                                {% else %}
-                                    {% if value is string %}
-                                        {% if value|length > 50 %}
-                                            <span title="{{ value }}">{{ value[:50] }}...</span>
-                                        {% else %}
-                                            {{ value }}
-                                        {% endif %}
+            <span class="page-text">Страница {{ page }} из {{ pages }}</span>
+            
+            {% if page < pages %}
+            <a href="/tables?table={{ current_table }}&page={{ page + 1 }}" class="page-btn">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="/tables?table={{ current_table }}&page={{ pages }}" class="page-btn">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="table-wrapper mt-3">
+            {% if data and data|length > 0 %}
+            <table class="compact-table">
+                <thead>
+                    <tr>
+                        {% for col in columns %}
+                        <th>{{ col.column_name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        {% for col in columns %}
+                        <td>
+                            {% set value = row[col.column_name] %}
+                            {% if value is none %}
+                                <span style="opacity: 0.4;">—</span>
+                            {% else %}
+                                {% if value is string %}
+                                    {% if value|length > 50 %}
+                                        <span title="{{ value }}">{{ value[:50] }}...</span>
                                     {% else %}
                                         {{ value }}
                                     {% endif %}
+                                {% else %}
+                                    {{ value }}
                                 {% endif %}
-                            </td>
-                            {% endfor %}
-                        </tr>
+                            {% endif %}
+                        </td>
                         {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-database" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
-                    <p style="opacity: 0.6;">Нет данных</p>
-                </div>
-                {% endif %}
-            </div>
-            
-            {% if pages > 1 %}
-            <div class="pagination mt-3">
-                {% if page > 1 %}
-                <a href="/tables?table={{ current_table }}&page=1" class="page-btn">
-                    <i class="fas fa-angle-double-left"></i>
-                </a>
-                <a href="/tables?table={{ current_table }}&page={{ page - 1 }}" class="page-btn">
-                    <i class="fas fa-angle-left"></i>
-                </a>
-                {% endif %}
-                
-                <span class="page-text">Страница {{ page }} из {{ pages }}</span>
-                
-                {% if page < pages %}
-                <a href="/tables?table={{ current_table }}&page={{ page + 1 }}" class="page-btn">
-                    <i class="fas fa-angle-right"></i>
-                </a>
-                <a href="/tables?table={{ current_table }}&page={{ pages }}" class="page-btn">
-                    <i class="fas fa-angle-double-right"></i>
-                </a>
-                {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-database" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
+                <p style="opacity: 0.6;">Нет данных</p>
             </div>
             {% endif %}
         </div>
+        
+        {% if pages > 1 %}
+        <div class="pagination mt-3">
+            {% if page > 1 %}
+            <a href="/tables?table={{ current_table }}&page=1" class="page-btn">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="/tables?table={{ current_table }}&page={{ page - 1 }}" class="page-btn">
+                <i class="fas fa-angle-left"></i>
+            </a>
+            {% endif %}
+            
+            <span class="page-text">Страница {{ page }} из {{ pages }}</span>
+            
+            {% if page < pages %}
+            <a href="/tables?table={{ current_table }}&page={{ page + 1 }}" class="page-btn">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="/tables?table={{ current_table }}&page={{ pages }}" class="page-btn">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 
 <div class="grid grid-cols-3 gap-4 mt-4">
     <div class="card">
-        <div class="card-top">
-            <h3><i class="fas fa-plus"></i> Новая запись</h3>
+        <div class="card-top" onclick="toggleSection('addSection')" style="cursor: pointer;">
+            <div class="flex justify-between align-center">
+                <h3><i class="fas fa-plus"></i> Новая запись</h3>
+                <i class="fas fa-chevron-down" id="addIcon"></i>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="addSection">
             <form id="addForm" onsubmit="return addRow(event)">
                 <input type="hidden" name="table" value="{{ current_table }}">
                 <div style="max-height: 300px; overflow-y: auto; padding: 8px;">
@@ -185,10 +194,13 @@
     </div>
     
     <div class="card">
-        <div class="card-top">
-            <h3><i class="fas fa-pencil"></i> Изменить запись</h3>
+        <div class="card-top" onclick="toggleSection('modifySection')" style="cursor: pointer;">
+            <div class="flex justify-between align-center">
+                <h3><i class="fas fa-pencil"></i> Изменить запись</h3>
+                <i class="fas fa-chevron-down" id="modifyIcon"></i>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="modifySection">
             <form id="modifyForm" onsubmit="return modifyRow(event)">
                 <input type="hidden" name="table" value="{{ current_table }}">
                 <div class="form-group">
@@ -212,9 +224,7 @@
                     <small class="form-note">Выберите поля для изменения</small>
                 </div>
                 
-                <div id="fieldInputs" style="max-height: 250px; overflow-y: auto; padding: 8px; display: none;">
-                    <!-- Поля будут добавляться здесь -->
-                </div>
+                <div id="fieldInputs" style="max-height: 250px; overflow-y: auto; padding: 8px; display: none;"></div>
                 
                 <button type="submit" class="btn btn-orange w-full mt-3">
                     <i class="fas fa-save"></i> Изменить
@@ -224,10 +234,13 @@
     </div>
     
     <div class="card">
-        <div class="card-top">
-            <h3><i class="fas fa-trash"></i> Удалить запись</h3>
+        <div class="card-top" onclick="toggleSection('deleteSection')" style="cursor: pointer;">
+            <div class="flex justify-between align-center">
+                <h3><i class="fas fa-trash"></i> Удалить запись</h3>
+                <i class="fas fa-chevron-down" id="deleteIcon"></i>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="deleteSection">
             <form id="deleteForm" onsubmit="return deleteRow(event)">
                 <input type="hidden" name="table" value="{{ current_table }}">
                 <div class="form-group">
@@ -271,44 +284,26 @@
 </div>
 {% endif %}
 
-<style>
-.warning-box {
-    padding: 12px;
-    background: rgba(255, 165, 0, 0.1);
-    border-radius: 6px;
-    border: 1px solid rgba(255, 165, 0, 0.3);
-    margin-bottom: 15px;
-}
-
-.grid-cols-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-}
-
-.grid-cols-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-}
-
-@media (max-width: 1200px) {
-    .grid-cols-3 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .grid-cols-2 {
-        grid-template-columns: 1fr;
-    }
-    .grid-cols-3 {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-
 <script>
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+    
+    if (section.style.display === 'none' || section.style.display === '') {
+        section.style.display = 'block';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    } else {
+        section.style.display = 'none';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+}
+
 function showSelectedFields() {
     const select = document.getElementById('fieldSelect');
     const container = document.getElementById('fieldInputs');
@@ -504,5 +499,41 @@ async function deleteRow(e) {
         alert('Ошибка: ' + error.message);
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = ['tablesListSection', 'dataSection', 'addSection', 'modifySection', 'deleteSection'];
+    sections.forEach(section => {
+        const el = document.getElementById(section);
+        if (el) el.style.display = 'none';
+    });
+});
 </script>
+
+<style>
+.warning-box {
+    padding: 12px;
+    background: rgba(255, 165, 0, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    margin-bottom: 15px;
+}
+
+.grid-cols-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 1200px) {
+    .grid-cols-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock %}
