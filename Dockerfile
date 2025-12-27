@@ -9,12 +9,12 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY app/ .
 
-RUN mkdir -p /app/backups /app/exports /app/archives static templates
+RUN mkdir -p static templates backups exports archives
 
 EXPOSE 3000
 
