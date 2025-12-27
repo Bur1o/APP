@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}SQL консоль - DataBoard{% endblock %}
+
+{% block page_title %}SQL консоль{% endblock %}
+
+{% block content %}
+<div class="top-section">
+    <h1 class="main-title">SQL консоль</h1>
+    <p class="main-description">Выполняйте запросы и сохраняйте результаты</p>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+    <div class="card">
+        <div class="card-top">
+            <h3><i class="fas fa-terminal"></i> Редактор SQL</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label class="form-label">SQL запрос</label>
+                <textarea id="sqlEditor" class="form-input" rows="8" 
+                          placeholder="SELECT * FROM table_name WHERE condition = %s"
+                          style="font-family: monospace; font-size: 13px;">
+{% if request.query_params.get('table') %}SELECT * FROM {{ request.query_params.get('table') }} LIMIT 200{% endif %}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Параметры</label>
+                <div class="flex gap-3 mb-2">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="paramType" value="array" checked onchange="changeParamType()">
+                        <span>Массив</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="paramType" value="object" onchange="changeParamType()">
+                        <span>Объект</span>
+                    </label>
+                </div>
+                <textarea id="sqlParams" class="form-input" rows="4" 
+                          placeholder='["value1", "value2"]'
+                          style="font-family: monospace; font-size: 13px;"></textarea>
+                <small class="form-note" id="paramNote">
+                    Для позиционных параметров используйте массив: ["value1", "value2"]
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Формат сохранения</label>
+                <select id="saveFormat" class="form-input">
+                    <option value="csv">Excel (.xlsx)</option>
+                    <option value="json">JSON (.json)</option>
+                </select>
+            </div>
+            
+            <div class="flex gap-3 mt-4">
+                <button onclick="runSQL()" class="btn btn-blue" style="flex: 1;">
+                    <i class="fas fa-play"></i> Выполнить
+                </button>
+                <button onclick="saveResults()" class="btn btn-green" style="flex: 1;">
+                    <i class="fas fa-download"></i> Сохранить
+                </button>
+                <button onclick="clearEditor()" class="btn">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div>
+        <div class="card mb-4">
+            <div class="card-top">
+                <h3><i class="fas fa-database"></i> База</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <input type="text" id="searchTable" class="form-input" 
+                           placeholder="Поиск таблицы..." onkeyup="filterTables()">
+                </div>
+                <div style="max-height: 300px; overflow-y: auto; padding: 8px; background: #0f0f1a; border-radius: 6px;">
+                    <div class="grid grid-cols-2" id="tablesList">
+                        {% for table in tables %}
+                        <div class="btn text-left" 
+                             onclick="insertTable('{{ table }}')"
+                             style="justify-content: start; padding: 10px;">
+                            <i class="fas fa-table"></i> {{ table }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-top">
+                <h3><i class="fas fa-bolt"></i> Примеры</h3>
+            </div>
+            <div class="card-body">
+                <div class="flex flex-col gap-2">
+                    <button class="btn btn-small text-left" onclick="loadExample('select_all')">
+                        <i class="fas fa-search"></i> SELECT * FROM таблица
+                    </button>
+                    <button class="btn btn-small text-left" onclick="loadExample('select_where')">
+                        <i class="fas fa-filter"></i> SELECT с WHERE
+                    </button>
+                    <button class="btn btn-small text-left" onclick="loadExample('join')">
+                        <i class="fas fa-link"></i> JOIN таблиц
+                    </button>
+                    <button class="btn btn-small text-left" onclick="loadExample('aggregate')">
+                        <i class="fas fa-calculator"></i> Агрегатные функции
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4" id="resultPanel" style="display: none;">
+    <div class="card-top flex justify-between align-center">
+        <h3><i class="fas fa-table-list"></i> Результаты</h3>
+        <div>
+            <span style="opacity: 0.7; margin-right: 12px;">Найдено: <span id="rowCount">0</span></span>
+            <span style="opacity: 0.7;">Время: <span id="timeTaken">0</span> мс</span>
+            <button onclick="copyTable()" class="btn btn-small ml-3">
+                <i class="fas fa-copy"></i> Копировать
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table id="resultTable" class="compact-table">
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4" id="infoPanel" style="display: none;">
+    <div class="card-top">
+        <h3><i class="fas fa-info"></i> Информация</h3>
+    </div>
+    <div class="card-body">
+        <div id="queryStats" class="flex gap-4 mb-3"></div>
+    </div>
+</div>
+
+<script>
+let lastQueryDuration = 0;
+
+function insertTable(tableName) {
+    const editor = document.getElementById('sqlEditor');
+    const cursorPos = editor.selectionStart;
+    const text = editor.value;
+    editor.value = text.substring(0, cursorPos) + tableName + text.substring(cursorPos);
+    editor.focus();
+}
+
+function filterTables() {
+    const search = document.getElementById('searchTable').value.toLowerCase();
+    const items = document.querySelectorAll('#tablesList > div');
+    
+    items.forEach(item => {
+        const tableName = item.textContent.toLowerCase();
+        if (tableName.includes(search)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function changeParamType() {
+    const paramType = document.querySelector('input[name="paramType"]:checked').value;
+    const note = document.getElementById('paramNote');
+    
+    if (paramType === 'array') {
+        note.textContent = 'Для позиционных параметров используйте массив: ["value1", "value2"]';
+        document.getElementById('sqlParams').placeholder = '["value1", "value2"]';
+    } else {
+        note.textContent = 'Для именованных параметров используйте объект: {"param1": "value1", "param2": "value2"}';
+        document.getElementById('sqlParams').placeholder = '{"param1": "value1", "param2": "value2"}';
+    }
+}
+
+function loadExample(type) {
+    const examples = {
+        select_all: {
+            query: "SELECT * FROM bookmarks LIMIT 100",
+            params: "[]"
+        },
+        select_where: {
+            query: "SELECT * FROM bookmarks WHERE category_id = 1 LIMIT 100",
+            params: "[]"
+        },
+        select_params: {
+            query: "SELECT * FROM bookmarks WHERE category_id = %s AND created_at > %s",
+            params: '[1, "2024-01-01"]'
+        },
+        join: {
+            query: "SELECT b.*, c.name as category_name FROM bookmarks b JOIN categories c ON b.category_id = c.id LIMIT 50",
+            params: "[]"
+        },
+        aggregate: {
+            query: "SELECT category_id, COUNT(*) as count, AVG(LENGTH(title)) as avg_title_length FROM bookmarks GROUP BY category_id",
+            params: "[]"
+        }
+    };
+    
+    if (examples[type]) {
+        document.getElementById('sqlEditor').value = examples[type].query;
+        document.getElementById('sqlParams').value = examples[type].params;
+        
+        if (examples[type].params.startsWith('{')) {
+            document.querySelector('input[name="paramType"][value="object"]').checked = true;
+        } else {
+            document.querySelector('input[name="paramType"][value="array"]').checked = true;
+        }
+        changeParamType();
+    }
+}
+
+function clearEditor() {
+    document.getElementById('sqlEditor').value = '';
+    document.getElementById('sqlParams').value = '[]';
+    document.getElementById('resultPanel').style.display = 'none';
+    document.getElementById('infoPanel').style.display = 'none';
+    document.getElementById('searchTable').value = '';
+    filterTables();
+}
+
+async function runSQL() {
+    const sql = document.getElementById('sqlEditor').value.trim();
+    const params = document.getElementById('sqlParams').value.trim();
+    
+    if (!sql) {
+        alert('Введите SQL запрос');
+        return;
+    }
+    
+    const startTime = performance.now();
+    
+    try {
+        let paramsObj = {};
+        if (params) {
+            try {
+                paramsObj = JSON.parse(params);
+            } catch (e) {
+                alert('Ошибка в параметрах JSON: ' + e.message);
+                return;
+            }
+        }
+        
+        const paramType = document.querySelector('input[name="paramType"]:checked').value;
+        let requestParams = {};
+        
+        if (paramType === 'array' && Array.isArray(paramsObj)) {
+            paramsObj.forEach((value, index) => {
+                requestParams[index] = value;
+            });
+        } else if (paramType === 'object' && typeof paramsObj === 'object' && !Array.isArray(paramsObj)) {
+            requestParams = paramsObj;
+        } else {
+            alert('Неверный формат параметров');
+            return;
+        }
+        
+        const response = await fetch('/api/run_sql', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+                sql: sql,
+                params: JSON.stringify(requestParams)
+            })
+        });
+        
+        const result = await response.json();
+        const endTime = performance.now();
+        lastQueryDuration = Math.round(endTime - startTime);
+        
+        if (result.ok) {
+            showResults(result.data);
+            document.getElementById('rowCount').textContent = result.count;
+            document.getElementById('timeTaken').textContent = lastQueryDuration;
+            document.getElementById('resultPanel').style.display = 'block';
+            showStats(result);
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    }
+}
+
+async function saveResults() {
+    const sql = document.getElementById('sqlEditor').value.trim();
+    const params = document.getElementById('sqlParams').value.trim();
+    const format = document.getElementById('saveFormat').value;
+    
+    if (!sql) {
+        alert('Введите SQL запрос');
+        return;
+    }
+    
+    try {
+        let paramsObj = {};
+        if (params) {
+            try {
+                paramsObj = JSON.parse(params);
+            } catch (e) {
+                alert('Ошибка в параметрах JSON: ' + e.message);
+                return;
+            }
+        }
+        
+        const paramType = document.querySelector('input[name="paramType"]:checked').value;
+        let requestParams = {};
+        
+        if (paramType === 'array' && Array.isArray(paramsObj)) {
+            paramsObj.forEach((value, index) => {
+                requestParams[index] = value;
+            });
+        } else if (paramType === 'object' && typeof paramsObj === 'object' && !Array.isArray(paramsObj)) {
+            requestParams = paramsObj;
+        } else {
+            alert('Неверный формат параметров');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('sql', sql);
+        formData.append('params', JSON.stringify(requestParams));
+        formData.append('format', format);
+        
+        const response = await fetch('/api/save_sql', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = `sql_result_${new Date().toISOString().slice(0,10)}`;
+            
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } else {
+            const result = await response.json();
+            alert('Ошибка: ' + (result.error || 'Ошибка'));
+        }
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    }
+}
+
+function showStats(result) {
+    const statsDiv = document.getElementById('queryStats');
+    let statsHTML = '';
+    
+    statsHTML += `<div><strong>Записей:</strong> ${result.count}</div>`;
+    statsHTML += `<div><strong>Время:</strong> ${lastQueryDuration} мс</div>`;
+    
+    if (result.data && result.data.length > 0) {
+        const firstRow = result.data[0];
+        statsHTML += `<div><strong>Колонок:</strong> ${Object.keys(firstRow).length}</div>`;
+    }
+    
+    statsDiv.innerHTML = statsHTML;
+    document.getElementById('infoPanel').style.display = 'block';
+}
+
+function showResults(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('resultTable').innerHTML = 
+            '<tr><td colspan="100" style="text-align: center; padding: 40px; opacity: 0.6;">Нет данных</td></tr>';
+        return;
+    }
+    
+    const table = document.getElementById('resultTable');
+    const headers = Object.keys(data[0]);
+    
+    let html = '<thead><tr>';
+    headers.forEach(header => {
+        html += `<th>${header}</th>`;
+    });
+    html += '</tr></thead>';
+    
+    html += '<tbody>';
+    data.forEach((row, index) => {
+        html += '<tr>';
+        headers.forEach(header => {
+            let value = row[header];
+            if (value === null || value === undefined) {
+                value = '<span style="opacity: 0.4;">—</span>';
+            } else if (typeof value === 'object') {
+                value = '<span style="font-family: monospace; font-size: 12px; background: #0f0f1a; padding: 4px 8px; border-radius: 4px;">' + JSON.stringify(value, null, 2) + '</span>';
+            } else if (typeof value === 'string' && value.length > 100) {
+                value = '<span title="' + value + '" style="cursor: help;">' + value.substring(0, 100) + '...</span>';
+            } else if (typeof value === 'boolean') {
+                value = value ? '✓' : '✗';
+            }
+            html += `<td>${value}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody>';
+    
+    table.innerHTML = html;
+}
+
+function copyTable() {
+    const table = document.getElementById('resultTable');
+    let text = '';
+    
+    const headers = table.querySelectorAll('th');
+    const headerText = Array.from(headers).map(th => th.textContent).join('\t');
+    text += headerText + '\n';
+    
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowText = Array.from(cells).map(cell => {
+            let cellText = cell.textContent || cell.innerText;
+            if (cellText.includes('—')) cellText = '';
+            cellText = cellText.replace(/\n/g, ' ');
+            return cellText;
+        }).join('\t');
+        text += rowText + '\n';
+    });
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Таблица скопирована');
+    });
+}
+</script>
+{% endblock %}

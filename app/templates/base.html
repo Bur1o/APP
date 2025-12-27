@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DataBoard{% endblock %}</title>
+    <link rel="stylesheet" href="/static/theme.css">
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app">
+        <div class="nav">
+            <div class="nav-top">
+                <h1><i class="fas fa-cube"></i> DataBoard</h1>
+            </div>
+            
+            <div class="nav-items">
+                <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
+                    <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
+                    <span>Обзор</span>
+                </a>
+                <a href="/tables" class="nav-link {% if request.url.path.startswith('/tables') %}active{% endif %}">
+                    <span class="nav-icon"><i class="fas fa-edit"></i></span>
+                    <span>Таблицы</span>
+                </a>
+                <a href="/sql" class="nav-link {% if request.url.path.startswith('/sql') %}active{% endif %}">
+                    <span class="nav-icon"><i class="fas fa-terminal"></i></span>
+                    <span>SQL</span>
+                </a>
+                <a href="/tools" class="nav-link {% if request.url.path.startswith('/tools') %}active{% endif %}">
+                    <span class="nav-icon"><i class="fas fa-box"></i></span>
+                    <span>Утилиты</span>
+                </a>
+            </div>
+            
+            <div class="nav-bottom">
+                <p style="font-size: 11px; opacity: 0.5;">DataBoard v2.0</p>
+            </div>
+        </div>
+        
+        <div class="main">
+            <div class="top">
+                <div class="top-title">
+                    <h2>{% block page_title %}Панель{% endblock %}</h2>
+                </div>
+                <div class="top-info">
+                    <span style="font-size: 12px;">{{ request.url.hostname }}:{{ request.url.port or 3000 }}</span>
+                </div>
+            </div>
+            
+            <div class="content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}Редактор таблиц - DataBoard{% endblock %}
+
+{% block content %}
+<div class="flex justify-between align-center mb-4">
+    <div>
+        <h1 class="main-title">Редактор таблиц</h1>
+        <p class="main-description">Просмотр, добавление и изменение данных</p>
+    </div>
+    <div class="header-buttons">
+        {% if current_table %}
+        <div class="flex gap-3">
+            <a href="/api/get_table/{{ current_table }}/xlsx" target="_blank" class="btn btn-green">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+            <a href="/api/get_table/{{ current_table }}/json" target="_blank" class="btn">
+                <i class="fas fa-file-code"></i> JSON
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+    <div class="card">
+        <div class="card-top">
+            <h3><i class="fas fa-list"></i> Список таблиц</h3>
+        </div>
+        <div class="card-body">
+            <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: #0f0f1a; border-radius: 6px;">
+                <div class="flex flex-wrap gap-2">
+                    {% for table in tables %}
+                    <a href="/tables?table={{ table }}" 
+                       class="btn {% if current_table == table %}btn-blue{% else %}{% endif %}" 
+                       style="margin: 2px;">
+                        {{ table }}
+                        {% if table_counts %}
+                        <span class="count-badge" style="margin-left: 5px;">
+                            {{ table_counts.get(table, 0) }}
+                        </span>
+                        {% endif %}
+                    </a>
+                    {% else %}
+                    <div class="text-center w-full py-3">
+                        <i class="fas fa-database" style="font-size: 32px; opacity: 0.3; margin-bottom: 10px;"></i>
+                        <p style="opacity: 0.6;">Нет таблиц</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if current_table %}
+    <div class="card">
+        <div class="card-top flex justify-between align-center">
+            <h3><i class="fas fa-table"></i> {{ current_table }}</h3>
+            <span style="font-size: 14px; opacity: 0.7;">{{ total }} записей</span>
+        </div>
+        <div class="card-body">
+            {% if pages > 1 %}
+            <div class="pagination">
+                {% if page > 1 %}
+                <a href="/tables?table={{ current_table }}&page=1" class="page-btn">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="/tables?table={{ current_table }}&page={{ page - 1 }}" class="page-btn">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                {% endif %}
+                
+                <span class="page-text">Страница {{ page }} из {{ pages }}</span>
+                
+                {% if page < pages %}
+                <a href="/tables?table={{ current_table }}&page={{ page + 1 }}" class="page-btn">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="/tables?table={{ current_table }}&page={{ pages }}" class="page-btn">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="table-wrapper mt-3">
+                {% if data and data|length > 0 %}
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            {% for col in columns %}
+                            <th>{{ col.column_name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            {% for col in columns %}
+                            <td>
+                                {% set value = row[col.column_name] %}
+                                {% if value is none %}
+                                    <span style="opacity: 0.4;">—</span>
+                                {% else %}
+                                    {% if value is string %}
+                                        {% if value|length > 50 %}
+                                            <span title="{{ value }}">{{ value[:50] }}...</span>
+                                        {% else %}
+                                            {{ value }}
+                                        {% endif %}
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-database" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
+                    <p style="opacity: 0.6;">Нет данных</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if pages > 1 %}
+            <div class="pagination mt-3">
+                {% if page > 1 %}
+                <a href="/tables?table={{ current_table }}&page=1" class="page-btn">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="/tables?table={{ current_table }}&page={{ page - 1 }}" class="page-btn">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                {% endif %}
+                
+                <span class="page-text">Страница {{ page }} из {{ pages }}</span>
+                
+                {% if page < pages %}
+                <a href="/tables?table={{ current_table }}&page={{ page + 1 }}" class="page-btn">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="/tables?table={{ current_table }}&page={{ pages }}" class="page-btn">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-3 gap-4 mt-4">
+    <div class="card">
+        <div class="card-top">
+            <h3><i class="fas fa-plus"></i> Новая запись</h3>
+        </div>
+        <div class="card-body">
+            <form id="addForm" onsubmit="return addRow(event)">
+                <input type="hidden" name="table" value="{{ current_table }}">
+                <div style="max-height: 300px; overflow-y: auto; padding: 8px;">
+                    {% for col in columns %}
+                    {% if col.column_name != 'id' and col.column_name != 'created_at' and col.column_name != 'updated_at' %}
+                    <div class="form-group">
+                        <label class="form-label">{{ col.column_name }}</label>
+                        <input type="text" name="{{ col.column_name }}" 
+                               placeholder="{{ col.data_type }}"
+                               class="form-input"
+                               {% if col.is_nullable == 'NO' and not col.column_default %}required{% endif %}>
+                        {% if col.column_default %}
+                        <small class="form-note">По умолчанию: {{ col.column_default }}</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-green w-full mt-3">
+                    <i class="fas fa-plus"></i> Добавить
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-top">
+            <h3><i class="fas fa-pencil"></i> Изменить запись</h3>
+        </div>
+        <div class="card-body">
+            <form id="modifyForm" onsubmit="return modifyRow(event)">
+                <input type="hidden" name="table" value="{{ current_table }}">
+                <div class="form-group">
+                    <label class="form-label">Условие WHERE</label>
+                    <input type="text" name="condition" 
+                           placeholder="id = 1"
+                           class="form-input" required>
+                    <small class="form-note">Пример: id = 1 OR status = 'active'</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Выберите поля для изменения:</label>
+                    <select id="fieldSelect" multiple class="form-input" style="height: 100px;"
+                            onchange="showSelectedFields()">
+                        {% for col in columns %}
+                        {% if col.column_name != 'id' and col.column_name != 'created_at' and col.column_name != 'updated_at' %}
+                        <option value="{{ col.column_name }}">{{ col.column_name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                    <small class="form-note">Выберите поля для изменения</small>
+                </div>
+                
+                <div id="fieldInputs" style="max-height: 250px; overflow-y: auto; padding: 8px; display: none;">
+                    <!-- Поля будут добавляться здесь -->
+                </div>
+                
+                <button type="submit" class="btn btn-orange w-full mt-3">
+                    <i class="fas fa-save"></i> Изменить
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-top">
+            <h3><i class="fas fa-trash"></i> Удалить запись</h3>
+        </div>
+        <div class="card-body">
+            <form id="deleteForm" onsubmit="return deleteRow(event)">
+                <input type="hidden" name="table" value="{{ current_table }}">
+                <div class="form-group">
+                    <label class="form-label">Условие WHERE</label>
+                    <input type="text" name="condition" 
+                           placeholder="id = 1"
+                           class="form-input" required>
+                    <small class="form-note">Пример: id > 100 AND created_at < '2024-01-01'</small>
+                </div>
+                
+                <div class="warning-box">
+                    <div class="form-group mb-2">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="cascadeDelete" name="cascade" style="margin: 0;">
+                            <span>Удалить связанные записи</span>
+                        </label>
+                    </div>
+                    <small>При включении также удаляются записи из связанных таблиц.</small>
+                </div>
+                
+                <button type="submit" class="btn btn-red w-full">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% else %}
+</div>
+<div class="card mt-4">
+    <div class="card-body text-center">
+        <div style="font-size: 64px; opacity: 0.3; margin-bottom: 20px;">
+            <i class="fas fa-table"></i>
+        </div>
+        <h3 style="margin-bottom: 12px;">Выберите таблицу</h3>
+        <p style="opacity: 0.7; max-width: 400px; margin: 0 auto;">
+            Выберите таблицу из списка для работы с данными
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.warning-box {
+    padding: 12px;
+    background: rgba(255, 165, 0, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    margin-bottom: 15px;
+}
+
+.grid-cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.grid-cols-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 1200px) {
+    .grid-cols-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+function showSelectedFields() {
+    const select = document.getElementById('fieldSelect');
+    const container = document.getElementById('fieldInputs');
+    const selected = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    container.innerHTML = '';
+    
+    if (selected.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    
+    selected.forEach(field => {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+            <label class="form-label">${field}</label>
+            <input type="text" name="${field}" 
+                   placeholder="Новое значение"
+                   class="form-input">
+        `;
+        container.appendChild(div);
+    });
+}
+
+async function addRow(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (key !== 'table' && value) {
+            data[key] = value;
+        }
+    }
+    
+    if (Object.keys(data).length === 0) {
+        alert('Заполните поля');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+                table: formData.get('table'),
+                data: JSON.stringify(data)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok) {
+            alert(result.msg);
+            setTimeout(() => {
+                window.location.href = window.location.href;
+            }, 100);
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function modifyRow(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {};
+    
+    const selectedFields = Array.from(document.getElementById('fieldSelect').selectedOptions).map(opt => opt.value);
+    
+    selectedFields.forEach(field => {
+        const value = formData.get(field);
+        if (value) {
+            data[field] = value;
+        }
+    });
+    
+    if (Object.keys(data).length === 0) {
+        alert('Выберите и заполните поля для изменения');
+        return;
+    }
+    
+    const condition = formData.get('condition');
+    if (!condition || condition.trim() === "") {
+        alert("Укажите условие");
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/modify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+                table: formData.get('table'),
+                data: JSON.stringify(data),
+                condition: condition
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok) {
+            alert(result.msg);
+            setTimeout(() => {
+                window.location.href = window.location.href;
+            }, 100);
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deleteRow(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const condition = formData.get('condition');
+    const cascade = document.getElementById('cascadeDelete').checked;
+    
+    if (!condition || condition.trim() === "") {
+        alert("Укажите условие");
+        return;
+    }
+    
+    let message = cascade 
+        ? 'Удалить все связанные записи?\nУсловие: ' + condition + '\n\nПродолжить?'
+        : 'Удалить записи?\nУсловие: ' + condition;
+    
+    if (!confirm(message)) return;
+    
+    try {
+        const response = await fetch('/api/remove', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+                table: formData.get('table'),
+                condition: condition,
+                cascade: cascade
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok) {
+            alert(result.msg);
+            setTimeout(() => {
+                window.location.href = window.location.href;
+            }, 100);
+        } else {
+            if (result.has_relations) {
+                let relationMessage = 'Найдены связанные записи:\n\n';
+                result.relations.forEach(dep => {
+                    relationMessage += `${dep.table}: ${dep.count} записей\n`;
+                });
+                relationMessage += '\nВключите удаление связанных записей.';
+                
+                if (confirm(relationMessage + '\n\nУдалить со связанными?')) {
+                    const cascadeResponse = await fetch('/api/remove', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: new URLSearchParams({
+                            table: formData.get('table'),
+                            condition: condition,
+                            cascade: true
+                        })
+                    });
+                    
+                    const cascadeResult = await cascadeResponse.json();
+                    
+                    if (cascadeResult.ok) {
+                        alert(cascadeResult.msg);
+                        setTimeout(() => {
+                            window.location.href = window.location.href;
+                        }, 100);
+                    } else {
+                        alert('Ошибка: ' + cascadeResult.error);
+                    }
+                }
+            } else {
+                alert('Ошибка: ' + result.error);
+            }
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
