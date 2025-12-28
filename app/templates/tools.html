@@ -13,13 +13,13 @@
 <div class="tools-grid">
     <div class="tools-row">
         <div class="card">
-            <div class="card-top" onclick="toggleSection('backupSection')" style="cursor: pointer;">
+            <div class="card-top" onclick="toggleSection('backupSection', 'backupIcon')" style="cursor: pointer;">
                 <div class="flex justify-between align-center">
                     <h3><i class="fas fa-download"></i> Создание резервной копии</h3>
                     <i class="fas fa-chevron-down" id="backupIcon"></i>
                 </div>
             </div>
-            <div class="card-body" id="backupSection">
+            <div class="card-body" id="backupSection" style="display: none;">
                 <div class="info-box mb-4">
                     <div class="flex align-center gap-2">
                         <i class="fas fa-info-circle"></i>
@@ -66,13 +66,13 @@
         </div>
         
         <div class="card">
-            <div class="card-top" onclick="toggleSection('restoreSection')" style="cursor: pointer;">
+            <div class="card-top" onclick="toggleSection('restoreSection', 'restoreIcon')" style="cursor: pointer;">
                 <div class="flex justify-between align-center">
                     <h3><i class="fas fa-history"></i> Восстановление из копии</h3>
                     <i class="fas fa-chevron-down" id="restoreIcon"></i>
                 </div>
             </div>
-            <div class="card-body" id="restoreSection">
+            <div class="card-body" id="restoreSection" style="display: none;">
                 <div class="warning-box mb-4">
                     <div class="flex align-center gap-2">
                         <i class="fas fa-exclamation-triangle"></i>
@@ -91,7 +91,7 @@
                 </div>
                 
                 <div class="flex justify-center mt-4">
-                    <button onclick="doRestore()" class="btn btn-orange btn-large">
+                    <button onclick="doRestore()" class="btn btn-blue btn-large">
                         <i class="fas fa-redo"></i> Восстановить базу
                     </button>
                 </div>
@@ -103,13 +103,13 @@
     
     <div class="tools-row">
         <div class="card">
-            <div class="card-top" onclick="toggleSection('exportSection')" style="cursor: pointer;">
+            <div class="card-top" onclick="toggleSection('exportSection', 'exportIcon')" style="cursor: pointer;">
                 <div class="flex justify-between align-center">
                     <h3><i class="fas fa-file-export"></i> Экспорт данных</h3>
                     <i class="fas fa-chevron-down" id="exportIcon"></i>
                 </div>
             </div>
-            <div class="card-body" id="exportSection">
+            <div class="card-body" id="exportSection" style="display: none;">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <div class="form-group">
@@ -166,13 +166,13 @@
         </div>
         
         <div class="card">
-            <div class="card-top" onclick="toggleSection('packSection')" style="cursor: pointer;">
+            <div class="card-top" onclick="toggleSection('packSection', 'packIcon')" style="cursor: pointer;">
                 <div class="flex justify-between align-center">
                     <h3><i class="fas fa-archive"></i> Архивирование таблиц</h3>
                     <i class="fas fa-chevron-down" id="packIcon"></i>
                 </div>
             </div>
-            <div class="card-body" id="packSection">
+            <div class="card-body" id="packSection" style="display: none;">
                 <div class="warning-box mb-4">
                     <div class="flex align-center gap-2">
                         <i class="fas fa-exclamation-triangle"></i>
@@ -217,7 +217,7 @@
                 </div>
                 
                 <div class="flex justify-center mt-4">
-                    <button onclick="packTables()" class="btn btn-orange btn-large">
+                    <button onclick="packTables()" class="btn btn-blue btn-large">
                         <i class="fas fa-archive"></i> Архивировать выбранные
                     </button>
                 </div>
@@ -229,13 +229,13 @@
     
     <div class="tools-row">
         <div class="card">
-            <div class="card-top" onclick="toggleSection('dangerSection')" style="cursor: pointer;">
+            <div class="card-top" onclick="toggleSection('dangerSection', 'dangerIcon')" style="cursor: pointer;">
                 <div class="flex justify-between align-center">
                     <h3><i class="fas fa-skull"></i> Опасные операции</h3>
                     <i class="fas fa-chevron-down" id="dangerIcon"></i>
                 </div>
             </div>
-            <div class="card-body" id="dangerSection">
+            <div class="card-body" id="dangerSection" style="display: none;">
                 <div class="danger-alert mb-4">
                     <div class="flex align-center gap-2">
                         <i class="fas fa-radiation"></i>
@@ -334,9 +334,10 @@
 </div>
 
 <script>
-function toggleSection(sectionId) {
+// Функция для переключения конкретной секции
+function toggleSection(sectionId, iconId) {
     const section = document.getElementById(sectionId);
-    const icon = document.getElementById(sectionId + 'Icon');
+    const icon = document.getElementById(iconId);
     
     if (section.style.display === 'none' || section.style.display === '') {
         section.style.display = 'block';
@@ -351,7 +352,45 @@ function toggleSection(sectionId) {
             icon.classList.add('fa-chevron-down');
         }
     }
+    
+    // Сохраняем состояние в localStorage
+    localStorage.setItem(sectionId, section.style.display);
 }
+
+// Восстанавливаем состояние секций при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = [
+        {id: 'backupSection', icon: 'backupIcon'},
+        {id: 'restoreSection', icon: 'restoreIcon'},
+        {id: 'exportSection', icon: 'exportIcon'},
+        {id: 'packSection', icon: 'packIcon'},
+        {id: 'dangerSection', icon: 'dangerIcon'}
+    ];
+    
+    sections.forEach(({id, icon}) => {
+        const section = document.getElementById(id);
+        const iconElement = document.getElementById(icon);
+        
+        if (section && iconElement) {
+            const savedState = localStorage.getItem(id);
+            if (savedState !== null) {
+                section.style.display = savedState;
+                if (savedState === 'none') {
+                    iconElement.classList.remove('fa-chevron-up');
+                    iconElement.classList.add('fa-chevron-down');
+                } else {
+                    iconElement.classList.remove('fa-chevron-down');
+                    iconElement.classList.add('fa-chevron-up');
+                }
+            } else {
+                // Устанавливаем начальное состояние (все закрыты)
+                section.style.display = 'none';
+                iconElement.classList.remove('fa-chevron-up');
+                iconElement.classList.add('fa-chevron-down');
+            }
+        }
+    });
+});
 
 let currentSaveFormat = 'xlsx';
 
@@ -646,14 +685,6 @@ async function wipeDatabase() {
         alert('Ошибка сети: ' + error.message);
     }
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const sections = ['backupSection', 'restoreSection', 'exportSection', 'packSection', 'dangerSection'];
-    sections.forEach(section => {
-        const el = document.getElementById(section);
-        if (el) el.style.display = 'none';
-    });
-});
 </script>
 
 <style>

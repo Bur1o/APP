@@ -23,13 +23,13 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-top" onclick="toggleSection('tablesListSection')" style="cursor: pointer;">
+    <div class="card-top" onclick="toggleSection('tablesListSection', 'tablesListIcon')" style="cursor: pointer;">
         <div class="flex justify-between align-center">
             <h3><i class="fas fa-list"></i> Список таблиц</h3>
             <i class="fas fa-chevron-down" id="tablesListIcon"></i>
         </div>
     </div>
-    <div class="card-body" id="tablesListSection">
+    <div class="card-body" id="tablesListSection" style="display: none;">
         <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
             <div class="flex flex-wrap gap-2">
                 {% for table in tables %}
@@ -56,7 +56,7 @@
 
 {% if current_table %}
 <div class="card mb-4">
-    <div class="card-top" onclick="toggleSection('dataSection')" style="cursor: pointer;">
+    <div class="card-top" onclick="toggleSection('dataSection', 'dataIcon')" style="cursor: pointer;">
         <div class="flex justify-between align-center">
             <div class="flex align-center gap-3">
                 <h3><i class="fas fa-table"></i> {{ current_table }}</h3>
@@ -65,7 +65,7 @@
             <i class="fas fa-chevron-down" id="dataIcon"></i>
         </div>
     </div>
-    <div class="card-body" id="dataSection">
+    <div class="card-body" id="dataSection" style="display: none;">
         {% if pages > 1 %}
         <div class="pagination">
             {% if page > 1 %}
@@ -161,13 +161,13 @@
 
 <div class="grid grid-cols-3 gap-4 mt-4">
     <div class="card">
-        <div class="card-top" onclick="toggleSection('addSection')" style="cursor: pointer;">
+        <div class="card-top" onclick="toggleSection('addSection', 'addIcon')" style="cursor: pointer;">
             <div class="flex justify-between align-center">
                 <h3><i class="fas fa-plus"></i> Новая запись</h3>
                 <i class="fas fa-chevron-down" id="addIcon"></i>
             </div>
         </div>
-        <div class="card-body" id="addSection">
+        <div class="card-body" id="addSection" style="display: none;">
             <form id="addForm" onsubmit="return addRow(event)">
                 <input type="hidden" name="table" value="{{ current_table }}">
                 <div style="max-height: 300px; overflow-y: auto; padding: 8px;">
@@ -194,13 +194,13 @@
     </div>
     
     <div class="card">
-        <div class="card-top" onclick="toggleSection('modifySection')" style="cursor: pointer;">
+        <div class="card-top" onclick="toggleSection('modifySection', 'modifyIcon')" style="cursor: pointer;">
             <div class="flex justify-between align-center">
                 <h3><i class="fas fa-pencil"></i> Изменить запись</h3>
                 <i class="fas fa-chevron-down" id="modifyIcon"></i>
             </div>
         </div>
-        <div class="card-body" id="modifySection">
+        <div class="card-body" id="modifySection" style="display: none;">
             <form id="modifyForm" onsubmit="return modifyRow(event)">
                 <input type="hidden" name="table" value="{{ current_table }}">
                 <div class="form-group">
@@ -226,7 +226,7 @@
                 
                 <div id="fieldInputs" style="max-height: 250px; overflow-y: auto; padding: 8px; display: none;"></div>
                 
-                <button type="submit" class="btn btn-orange w-full mt-3">
+                <button type="submit" class="btn btn-blue w-full mt-3">
                     <i class="fas fa-save"></i> Изменить
                 </button>
             </form>
@@ -234,13 +234,13 @@
     </div>
     
     <div class="card">
-        <div class="card-top" onclick="toggleSection('deleteSection')" style="cursor: pointer;">
+        <div class="card-top" onclick="toggleSection('deleteSection', 'deleteIcon')" style="cursor: pointer;">
             <div class="flex justify-between align-center">
                 <h3><i class="fas fa-trash"></i> Удалить запись</h3>
                 <i class="fas fa-chevron-down" id="deleteIcon"></i>
             </div>
         </div>
-        <div class="card-body" id="deleteSection">
+        <div class="card-body" id="deleteSection" style="display: none;">
             <form id="deleteForm" onsubmit="return deleteRow(event)">
                 <input type="hidden" name="table" value="{{ current_table }}">
                 <div class="form-group">
@@ -284,9 +284,10 @@
 {% endif %}
 
 <script>
-function toggleSection(sectionId) {
+// Функция для переключения конкретной секции
+function toggleSection(sectionId, iconId) {
     const section = document.getElementById(sectionId);
-    const icon = document.getElementById(sectionId + 'Icon');
+    const icon = document.getElementById(iconId);
     
     if (section.style.display === 'none' || section.style.display === '') {
         section.style.display = 'block';
@@ -301,7 +302,45 @@ function toggleSection(sectionId) {
             icon.classList.add('fa-chevron-down');
         }
     }
+    
+    // Сохраняем состояние в localStorage
+    localStorage.setItem(sectionId, section.style.display);
 }
+
+// Восстанавливаем состояние секций при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = [
+        {id: 'tablesListSection', icon: 'tablesListIcon'},
+        {id: 'dataSection', icon: 'dataIcon'},
+        {id: 'addSection', icon: 'addIcon'},
+        {id: 'modifySection', icon: 'modifyIcon'},
+        {id: 'deleteSection', icon: 'deleteIcon'}
+    ];
+    
+    sections.forEach(({id, icon}) => {
+        const section = document.getElementById(id);
+        const iconElement = document.getElementById(icon);
+        
+        if (section && iconElement) {
+            const savedState = localStorage.getItem(id);
+            if (savedState !== null) {
+                section.style.display = savedState;
+                if (savedState === 'none') {
+                    iconElement.classList.remove('fa-chevron-up');
+                    iconElement.classList.add('fa-chevron-down');
+                } else {
+                    iconElement.classList.remove('fa-chevron-down');
+                    iconElement.classList.add('fa-chevron-up');
+                }
+            } else {
+                // Устанавливаем начальное состояние (все закрыты)
+                section.style.display = 'none';
+                iconElement.classList.remove('fa-chevron-up');
+                iconElement.classList.add('fa-chevron-down');
+            }
+        }
+    });
+});
 
 function showSelectedFields() {
     const select = document.getElementById('fieldSelect');
@@ -498,14 +537,6 @@ async function deleteRow(e) {
         alert('Ошибка: ' + error.message);
     }
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const sections = ['tablesListSection', 'dataSection', 'addSection', 'modifySection', 'deleteSection'];
-    sections.forEach(section => {
-        const el = document.getElementById(section);
-        if (el) el.style.display = 'none';
-    });
-});
 </script>
 
 <style>

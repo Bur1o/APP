@@ -35,12 +35,12 @@
         </div>
         
         <div class="stat-box">
-            <div class="stat-symbol orange">
+            <div class="stat-symbol blue">
                 <i class="fas fa-server"></i>
             </div>
             <div class="stat-number">24/7</div>
             <div class="stat-text">Работает</div>
-            <a href="/tools" class="btn btn-orange mt-4 w-full">
+            <a href="/tools" class="btn btn-blue mt-4 w-full">
                 <i class="fas fa-box"></i> Утилиты
             </a>
         </div>
@@ -48,13 +48,13 @@
 
     <div class="tables-container">
         <div class="card">
-            <div class="card-top" onclick="toggleSection('tablesSection')" style="cursor: pointer;">
+            <div class="card-top" onclick="toggleSection('tablesSection', 'tablesIcon')" style="cursor: pointer;">
                 <div class="flex justify-between align-center">
                     <h3><i class="fas fa-th-large"></i> Доступные таблицы</h3>
                     <i class="fas fa-chevron-down" id="tablesIcon"></i>
                 </div>
             </div>
-            <div class="card-body" id="tablesSection">
+            <div class="card-body" id="tablesSection" style="display: block;">
                 {% if tables %}
                 <div class="table-wrapper">
                     <table class="compact-table">
@@ -116,29 +116,54 @@
 </div>
 
 <script>
-function toggleSection(sectionId) {
+// Функция для переключения конкретной секции
+function toggleSection(sectionId, iconId) {
     const section = document.getElementById(sectionId);
-    const icon = document.getElementById(sectionId + 'Icon');
+    const icon = document.getElementById(iconId);
     
     if (section.style.display === 'none' || section.style.display === '') {
         section.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
     } else {
         section.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
     }
+    
+    // Сохраняем состояние в localStorage
+    localStorage.setItem(sectionId, section.style.display);
 }
 
-// Открываем таблицы по умолчанию
+// Восстанавливаем состояние секций при загрузке
 document.addEventListener('DOMContentLoaded', function() {
-    const section = document.getElementById('tablesSection');
-    const icon = document.getElementById('tablesIcon');
-    if (section && icon) {
-        section.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
+    // Восстанавливаем состояние для таблиц
+    const tablesSection = document.getElementById('tablesSection');
+    const tablesIcon = document.getElementById('tablesIcon');
+    
+    const savedState = localStorage.getItem('tablesSection');
+    if (savedState) {
+        tablesSection.style.display = savedState;
+        if (tablesIcon) {
+            if (savedState === 'none') {
+                tablesIcon.classList.remove('fa-chevron-up');
+                tablesIcon.classList.add('fa-chevron-down');
+            } else {
+                tablesIcon.classList.remove('fa-chevron-down');
+                tablesIcon.classList.add('fa-chevron-up');
+            }
+        }
+    } else {
+        // По умолчанию открыто
+        tablesSection.style.display = 'block';
+        if (tablesIcon) {
+            tablesIcon.classList.remove('fa-chevron-down');
+            tablesIcon.classList.add('fa-chevron-up');
+        }
     }
 });
 </script>
