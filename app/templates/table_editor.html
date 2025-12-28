@@ -389,10 +389,10 @@ async function addRow(e) {
     try {
         const response = await fetch('/api/add', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
                 table: formData.get('table'),
-                data: JSON.stringify(data)
+                data: data
             })
         });
         
@@ -400,9 +400,8 @@ async function addRow(e) {
         
         if (result.ok) {
             alert(result.msg);
-            setTimeout(() => {
-                window.location.href = window.location.href;
-            }, 100);
+            // Обновляем страницу сразу
+            window.location.reload();
         } else {
             alert('Ошибка: ' + result.error);
         }
@@ -421,7 +420,7 @@ async function modifyRow(e) {
     
     selectedFields.forEach(field => {
         const value = formData.get(field);
-        if (value) {
+        if (value && value.trim() !== '') {
             data[field] = value;
         }
     });
@@ -440,10 +439,10 @@ async function modifyRow(e) {
     try {
         const response = await fetch('/api/modify', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
                 table: formData.get('table'),
-                data: JSON.stringify(data),
+                data: data,
                 condition: condition
             })
         });
@@ -452,9 +451,8 @@ async function modifyRow(e) {
         
         if (result.ok) {
             alert(result.msg);
-            setTimeout(() => {
-                window.location.href = window.location.href;
-            }, 100);
+            // Обновляем страницу сразу
+            window.location.reload();
         } else {
             alert('Ошибка: ' + result.error);
         }
@@ -477,15 +475,15 @@ async function deleteRow(e) {
     
     let message = cascade 
         ? 'Удалить все связанные записи?\nУсловие: ' + condition + '\n\nПродолжить?'
-        : 'Удалить записи?\nУсловие: ' + condition;
+        : 'Удалить записи?\nУсловие: ' + condition + '\n\nПродолжить?';
     
     if (!confirm(message)) return;
     
     try {
         const response = await fetch('/api/remove', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
                 table: formData.get('table'),
                 condition: condition,
                 cascade: cascade
@@ -496,9 +494,8 @@ async function deleteRow(e) {
         
         if (result.ok) {
             alert(result.msg);
-            setTimeout(() => {
-                window.location.href = window.location.href;
-            }, 100);
+            // Обновляем страницу сразу
+            window.location.reload();
         } else {
             if (result.has_relations) {
                 let relationMessage = 'Найдены связанные записи:\n\n';
@@ -510,8 +507,8 @@ async function deleteRow(e) {
                 if (confirm(relationMessage + '\n\nУдалить со связанными?')) {
                     const cascadeResponse = await fetch('/api/remove', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: new URLSearchParams({
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
                             table: formData.get('table'),
                             condition: condition,
                             cascade: true
@@ -522,9 +519,8 @@ async function deleteRow(e) {
                     
                     if (cascadeResult.ok) {
                         alert(cascadeResult.msg);
-                        setTimeout(() => {
-                            window.location.href = window.location.href;
-                        }, 100);
+                        // Обновляем страницу сразу
+                        window.location.reload();
                     } else {
                         alert('Ошибка: ' + cascadeResult.error);
                     }

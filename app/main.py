@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Request, Form, File, UploadFile
+from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from typing import List, Optional
 import os
 import json
 from datetime import datetime
@@ -92,6 +92,11 @@ async def table_editor(request: Request, table: str = "", page: int = 1):
             offset = (page - 1) * per_page
             data = db.get_table_rows(table, limit=per_page, offset=offset) or []
         
+        # Получаем количество записей для всех таблиц
+        table_counts = {}
+        for t in tables:
+            table_counts[t] = db.get_row_count(t)
+        
         return templates.TemplateResponse("table_editor.html", {
             "request": request,
             "tables": tables,
@@ -101,7 +106,8 @@ async def table_editor(request: Request, table: str = "", page: int = 1):
             "page": page,
             "per_page": per_page,
             "total": total,
-            "pages": pages
+            "pages": pages,
+            "table_counts": table_counts
         })
     except Exception as e:
         print(f"Table editor error: {e}")
@@ -114,36 +120,66 @@ async def table_editor(request: Request, table: str = "", page: int = 1):
             "page": 1,
             "per_page": 200,
             "total": 0,
-            "pages": 0
+            "pages": 0,
+            "table_counts": {}
         })
 
 @app.post("/api/add")
-async def add_row(
-    table: str = Form(...),
-    data: str = Form(...)
-):
+async def add_row(request: Request):
     try:
-        data_dict = json.loads(data)
-        result = db.add_row(table, data_dict)
-        if result:
-            return {"ok": True, "msg": f"Added with ID: {result}", "id": result}
+        body = await request.json()
+        table = body.get('table')
+        data = body.get('data', {})
+        
+        if not table:
+            return {"ok": False, "error": "Table required"}
+        
+        # Преобразуем пустые строки в None для nullable полей
+        columns_info = db.get_table_info(table) or []
+        nullable_columns = [col['column_name'] for col in columns_info if col['is_nullable'] == 'YES']
+        
+        for key in list(data.keys()):
+            if data[key] == '' and key in nullable_columns:
+                data[key] = None
+        
+        result = db.add_row(table, data)
+        if result is not None:
+            return {"ok": True, "msg": f"Запись добавлена", "id": result}
         else:
-            return {"ok": True, "msg": "Row added", "id": result}
+            return {"ok": True, "msg": "Запись добавлена"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
 @app.post("/api/modify")
-async def modify_row(
-    table: str = Form(...),
-    data: str = Form(...),
-    condition: str = Form(...)
-):
+async def modify_row(request: Request):
     try:
-        data_dict = json.loads(data)
-        clean_data = {k: v for k, v in data_dict.items() if v is not None and v != ''}
+        body = await request.json()
+        table = body.get('table')
+        data = body.get('data', {})
+        condition = body.get('condition')
+        
+        if not table:
+            return {"ok": False, "error": "Table required"}
+        
+        if not condition or condition.strip() == "":
+            return {"ok": False, "error": "Condition required"}
+        
+        # Преобразуем пустые строки в None для nullable полей
+        columns_info = db.get_table_info(table) or []
+        nullable_columns = [col['column_name'] for col in columns_info if col['is_nullable'] == 'YES']
+        
+        for key in list(data.keys()):
+            if data[key] == '' and key in nullable_columns:
+                data[key] = None
+        
+        # Удаляем поля с пустыми значениями (кроме nullable)
+        clean_data = {}
+        for key, value in data.items():
+            if value is not None and (value != '' or key in nullable_columns):
+                clean_data[key] = value
         
         if not clean_data:
-            return {"ok": False, "error": "No data to modify"}
+            return {"ok": False, "error": "Нет данных для изменения"}
         
         result = db.modify_row(table, clean_data, condition)
         return result
@@ -152,12 +188,16 @@ async def modify_row(
         return {"ok": False, "error": str(e)}
 
 @app.post("/api/remove")
-async def remove_row(
-    table: str = Form(...),
-    condition: str = Form(...),
-    cascade: bool = Form(False)
-):
+async def remove_row(request: Request):
     try:
+        body = await request.json()
+        table = body.get('table')
+        condition = body.get('condition')
+        cascade = body.get('cascade', False)
+        
+        if not table:
+            return {"ok": False, "error": "Table required"}
+        
         if not condition or condition.strip() == "":
             return {"ok": False, "error": "Condition required"}
         
@@ -172,8 +212,11 @@ async def remove_row(
         return {"ok": False, "error": str(e)}
 
 @app.post("/api/drop_table")
-async def drop_table(table: str = Form(...)):
+async def drop_table(request: Request):
     try:
+        body = await request.json()
+        table = body.get('table')
+        
         if not table:
             return {"ok": False, "error": "Table required"}
         

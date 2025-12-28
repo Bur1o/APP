@@ -62,7 +62,11 @@ class DBManager:
         
         try:
             with conn.cursor() as cursor:
-                cursor.execute(sql, params or ())
+                if params:
+                    cursor.execute(sql, params)
+                else:
+                    cursor.execute(sql)
+                    
                 if fetch and cursor.description:
                     result = cursor.fetchall()
                 else:
@@ -171,8 +175,26 @@ class DBManager:
     
     def add_row(self, table_name, data):
         try:
-            columns = ', '.join([f'"{col}"' for col in data.keys()])
-            placeholders = ', '.join(['%s'] * len(data))
+            # Удаляем пустые значения для не-nullable полей
+            columns_info = self.get_table_info(table_name)
+            if not columns_info:
+                return None
+            
+            nullable_columns = [col['column_name'] for col in columns_info if col['is_nullable'] == 'YES']
+            filtered_data = {}
+            
+            for key, value in data.items():
+                if value is not None and value != '':
+                    filtered_data[key] = value
+                elif key in nullable_columns:
+                    filtered_data[key] = None
+                # Если поле не nullable и значение пустое - пропускаем
+            
+            if not filtered_data:
+                return None
+                
+            columns = ', '.join([f'"{col}"' for col in filtered_data.keys()])
+            placeholders = ', '.join(['%s'] * len(filtered_data))
             
             pk = self.get_table_pk(table_name)
             if pk:
@@ -180,11 +202,23 @@ class DBManager:
             else:
                 sql = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
             
-            result = self.run_sql(sql, tuple(data.values()))
+            conn = self.get_db_connection()
+            if not conn:
+                return None
             
-            if result and pk:
-                return result[0][pk]
-            return None
+            cursor = conn.cursor()
+            cursor.execute(sql, tuple(filtered_data.values()))
+            
+            if pk:
+                result = cursor.fetchone()
+                inserted_id = result[pk] if result else None
+            else:
+                inserted_id = None
+            
+            conn.commit()
+            conn.close()
+            
+            return inserted_id
         except Exception as e:
             print(f"Error adding data to {table_name}: {e}")
             return None
@@ -194,7 +228,18 @@ class DBManager:
             if not condition or condition.strip() == "":
                 return {"ok": False, "msg": "Condition cannot be empty"}
             
-            clean_data = {k: v for k, v in data.items() if v is not None and v != ''}
+            # Получаем информацию о nullable полях
+            columns_info = self.get_table_info(table_name)
+            nullable_columns = [col['column_name'] for col in columns_info] if columns_info else []
+            
+            # Обрабатываем данные
+            clean_data = {}
+            for key, value in data.items():
+                if value is not None and value != '':
+                    clean_data[key] = value
+                elif key in nullable_columns:
+                    clean_data[key] = None
+            
             if not clean_data:
                 return {"ok": False, "msg": "No data to update"}
             
