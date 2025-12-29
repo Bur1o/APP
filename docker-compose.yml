@@ -26,7 +26,7 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: AgroCultureDB
+      DB_NAME: my_app_db
       DB_USER: postgres
       DB_PASSWORD: postgres
       APP_HOST: 0.0.0.0
