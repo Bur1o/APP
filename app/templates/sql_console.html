@@ -1,3 +1,4 @@
+<!-- sql_console.html -->
 {% extends "base.html" %}
 
 {% block title %}SQL консоль - DataBoard{% endblock %}
@@ -104,7 +105,7 @@
     <div class="card-body" id="examplesSection" style="display: none;">
         <div class="flex flex-col gap-2">
             <button class="btn btn-small text-left" onclick="loadExample('select_all')">
-                <i class="fas fa-search"></i> SELECT * FROM таблица
+                <i class="fas fa-search"></i> SELECT * FROM enterprises
             </button>
             <button class="btn btn-small text-left" onclick="loadExample('select_where')">
                 <i class="fas fa-filter"></i> SELECT с WHERE
@@ -114,6 +115,12 @@
             </button>
             <button class="btn btn-small text-left" onclick="loadExample('aggregate')">
                 <i class="fas fa-calculator"></i> Агрегатные функции
+            </button>
+            <button class="btn btn-small text-left" onclick="loadExample('params_array')">
+                <i class="fas fa-list"></i> Параметры (массив)
+            </button>
+            <button class="btn btn-small text-left" onclick="loadExample('params_object')">
+                <i class="fas fa-object-group"></i> Параметры (объект)
             </button>
         </div>
     </div>
@@ -247,24 +254,59 @@ function changeParamType() {
 function loadExample(type) {
     const examples = {
         select_all: {
-            query: "SELECT * FROM bookmarks LIMIT 100",
-            params: "[]"
+            query: "SELECT * FROM enterprises LIMIT 100",
+            params: "[]",
+            paramType: "array"
         },
         select_where: {
-            query: "SELECT * FROM bookmarks WHERE category_id = 1 LIMIT 100",
-            params: "[]"
-        },
-        select_params: {
-            query: "SELECT * FROM bookmarks WHERE category_id = %s AND created_at > %s",
-            params: '[1, "2024-01-01"]'
+            query: "SELECT * FROM fields WHERE is_irrigated = true LIMIT 100",
+            params: "[]",
+            paramType: "array"
         },
         join: {
-            query: "SELECT b.*, c.name as category_name FROM bookmarks b JOIN categories c ON b.category_id = c.id LIMIT 50",
-            params: "[]"
+            query: `SELECT 
+    p.planting_id,
+    e.name as enterprise_name,
+    f.field_name,
+    c.crop_name,
+    p.planting_date,
+    p.expected_harvest_date,
+    p.seed_amount_kg
+FROM plantings p
+JOIN fields f ON p.field_id = f.field_id
+JOIN enterprises e ON f.enterprise_id = e.enterprise_id
+JOIN crops c ON p.crop_id = c.crop_id
+LIMIT 50`,
+            params: "[]",
+            paramType: "array"
         },
         aggregate: {
-            query: "SELECT category_id, COUNT(*) as count, AVG(LENGTH(title)) as avg_title_length FROM bookmarks GROUP BY category_id",
-            params: "[]"
+            query: `SELECT 
+    c.crop_type,
+    COUNT(*) as plantings_count,
+    SUM(p.seed_amount_kg) as total_seeds_kg,
+    AVG(p.seed_amount_kg) as avg_seeds_per_planting
+FROM plantings p
+JOIN crops c ON p.crop_id = c.crop_id
+GROUP BY c.crop_type
+ORDER BY plantings_count DESC`,
+            params: "[]",
+            paramType: "array"
+        },
+        params_array: {
+            query: "SELECT * FROM harvests WHERE yield_kg > %s AND is_certified = %s LIMIT 50",
+            params: '[50000, true]',
+            paramType: "array"
+        },
+        params_object: {
+            query: "SELECT * FROM field_operations WHERE operation_type = %(op_type)s AND cost > %(min_cost)s",
+            params: '{"op_type": "Полив", "min_cost": 20000}',
+            paramType: "object"
+        },
+        params_object_numeric: {
+            query: "SELECT * FROM crops WHERE growing_season_days > %s AND is_annual = %s",
+            params: '{"0": 100, "1": true}',
+            paramType: "object"
         }
     };
     
@@ -272,7 +314,8 @@ function loadExample(type) {
         document.getElementById('sqlEditor').value = examples[type].query;
         document.getElementById('sqlParams').value = examples[type].params;
         
-        if (examples[type].params.startsWith('{')) {
+        // Устанавливаем правильный тип параметров
+        if (examples[type].paramType === 'object') {
             document.querySelector('input[name="paramType"][value="object"]').checked = true;
         } else {
             document.querySelector('input[name="paramType"][value="array"]').checked = true;
@@ -315,10 +358,12 @@ async function runSQL() {
         let requestParams = {};
         
         if (paramType === 'array' && Array.isArray(paramsObj)) {
+            // Для массива создаем объект с числовыми ключами
             paramsObj.forEach((value, index) => {
                 requestParams[index] = value;
             });
-        } else if (paramType === 'object' && typeof paramsObj === 'object' && !Array.isArray(paramsObj)) {
+        } else if (paramType === 'object' && typeof paramsObj === 'object') {
+            // Для объекта передаем как есть
             requestParams = paramsObj;
         } else {
             alert('Неверный формат параметров');
@@ -377,10 +422,12 @@ async function saveResults() {
         let requestParams = {};
         
         if (paramType === 'array' && Array.isArray(paramsObj)) {
+            // Для массива создаем объект с числовыми ключами
             paramsObj.forEach((value, index) => {
                 requestParams[index] = value;
             });
-        } else if (paramType === 'object' && typeof paramsObj === 'object' && !Array.isArray(paramsObj)) {
+        } else if (paramType === 'object' && typeof paramsObj === 'object') {
+            // Для объекта передаем как есть
             requestParams = paramsObj;
         } else {
             alert('Неверный формат параметров');

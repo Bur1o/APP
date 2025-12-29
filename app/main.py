@@ -1,3 +1,4 @@
+# main.py (с исправленной обработкой параметров SQL запросов)
 from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
@@ -304,7 +305,10 @@ async def run_sql(
             except json.JSONDecodeError as e:
                 return {"ok": False, "error": f"JSON error: {str(e)}"}
         
-        result = db.run_sql(sql, params_dict)
+        # Обрабатываем параметры для корректной передачи в psycopg2
+        processed_params = process_params_for_psycopg2(sql, params_dict)
+        
+        result = db.run_sql(sql, processed_params)
         
         return {
             "ok": True,
@@ -328,7 +332,10 @@ async def save_sql_result(
             except json.JSONDecodeError as e:
                 return {"ok": False, "error": f"JSON error: {str(e)}"}
         
-        result = db.run_sql(sql, params_dict)
+        # Обрабатываем параметры для корректной передачи в psycopg2
+        processed_params = process_params_for_psycopg2(sql, params_dict)
+        
+        result = db.run_sql(sql, processed_params)
         
         if not result:
             return {"ok": False, "error": "No data to save"}
@@ -362,6 +369,52 @@ async def save_sql_result(
             
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+def process_params_for_psycopg2(sql: str, params):
+    """
+    Преобразует параметры в формат, понятный psycopg2.
+    
+    Поддерживает:
+    1. Массив: ["value1", "value2"]
+    2. Объект с числовыми ключами: {"0": "value1", "1": "value2"}
+    3. Именованные параметры: {"param1": "value1", "param2": "value2"}
+    
+    Для именованных параметров определяет порядок по их использованию в SQL.
+    """
+    if not params:
+        return None
+    
+    if isinstance(params, list):
+        # Если это список - возвращаем как кортеж
+        return tuple(params)
+    
+    elif isinstance(params, dict):
+        # Проверяем, есть ли именованные параметры в SQL
+        has_named_params = any(':' in sql or '%(' in sql)
+        
+        if has_named_params:
+            # Именованные параметры - возвращаем словарь как есть
+            return params
+        else:
+            # Позиционные параметры
+            # Проверяем, все ли ключи - числа
+            try:
+                numeric_keys = []
+                for key in params.keys():
+                    try:
+                        numeric_keys.append(int(key))
+                    except ValueError:
+                        # Если ключ не число, это именованный параметр
+                        return params
+                
+                # Сортируем по числовым ключам и возвращаем кортеж значений
+                sorted_keys = sorted(numeric_keys)
+                return tuple(params[str(k)] for k in sorted_keys)
+            except Exception:
+                # В случае ошибки возвращаем как есть
+                return params
+    
+    return params
 
 @app.post("/api/save_tables")
 async def save_selected_tables(

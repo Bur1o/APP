@@ -1,3 +1,4 @@
+# database.py (с исправлением обработки параметров)
 import os
 import psycopg2
 import subprocess
@@ -62,8 +63,11 @@ class DBManager:
         
         try:
             with conn.cursor() as cursor:
-                if params:
-                    cursor.execute(sql, params)
+                # Преобразуем параметры для psycopg2
+                sql_params = self._prepare_params(params)
+                
+                if sql_params:
+                    cursor.execute(sql, sql_params)
                 else:
                     cursor.execute(sql)
                     
@@ -79,6 +83,39 @@ class DBManager:
             return None
         finally:
             conn.close()
+    
+    def _prepare_params(self, params):
+        """Преобразует параметры из JSON формата в формат, понятный psycopg2"""
+        if not params:
+            return None
+        
+        try:
+            if isinstance(params, dict):
+                # Если это словарь с числовыми ключами (0, 1, 2...)
+                if all(str(k).isdigit() for k in params.keys() if k is not None):
+                    # Сортируем по ключам и возвращаем список значений
+                    sorted_keys = sorted([int(k) for k in params.keys() if str(k).isdigit()])
+                    return tuple(params[str(k)] for k in sorted_keys)
+                else:
+                    # Для именованных параметров просто возвращаем словарь
+                    return params
+            elif isinstance(params, list):
+                # Если это список - возвращаем как кортеж
+                return tuple(params)
+            else:
+                # Если это строка JSON
+                if isinstance(params, str):
+                    parsed = json.loads(params)
+                    return self._prepare_params(parsed)
+                return params
+        except Exception as e:
+            print(f"Error preparing params: {e}")
+            # Возвращаем как есть, если не удалось обработать
+            if isinstance(params, dict):
+                return params
+            elif isinstance(params, list):
+                return tuple(params)
+            return params
     
     def get_all_tables(self):
         sql = """
